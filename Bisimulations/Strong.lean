@@ -77,3 +77,47 @@ theorem bisimilar_iff_symm_interior_of_directed_bisimilar {p q : lts.Node}
   · rintro ⟨h_db, h_db'⟩
     refine ⟨SymmInterior directed_bisimilar, strong_bisimulation_of_directed_bisimilar, ?_⟩
     constructor <;> assumption
+
+structure StrongApartness (R : Rel lts) : Prop where
+  symmetry : Symmetric R
+  cotransfer : ∀ a, CoTransfers (lts.transition a) R
+
+def apart : Rel lts := Smallest StrongApartness
+
+lemma strong_apartness_of_compl_strong_bisimulation {R : Rel lts}
+    : StrongBisimulation R → StrongApartness (Compl R) := by
+  intro ⟨hsymm, htransf⟩
+  refine ⟨symmetric_of_compl hsymm, ?_⟩
+  intro a
+  apply cotransfers_of_compl_transfers
+  apply htransf
+
+lemma strong_bisimulation_of_compl_strong_apartness {R : Rel lts}
+    : StrongApartness R → StrongBisimulation (Compl R) := by
+  intro ⟨hsymm, hcotransf⟩
+  refine ⟨symmetric_of_compl hsymm, ?_⟩
+  intro a
+  apply transfers_of_compl_cotransfers
+  apply hcotransf
+
+theorem not_bisimilar_and_apart {p q : lts.Node}
+    : bisimilar p q → apart p q → False := by
+  rintro ⟨R, hsb, hr⟩ ha
+  have := strong_apartness_of_compl_strong_bisimulation hsb
+  exact ha (Compl R) this hr
+
+open Classical in
+theorem apart_of_not_bisimilar {p q : lts.Node}
+    : ¬bisimilar p q → apart p q := by
+  intro hnb Q hsa
+  apply byContradiction
+  intro hnq
+  apply hnb
+  exact ⟨Compl Q, strong_bisimulation_of_compl_strong_apartness hsa, hnq⟩
+
+open Classical in
+theorem bisimilar_or_apart {p q : lts.Node}
+    : bisimilar p q ∨ apart p q := by
+  cases em (bisimilar p q)
+  · left; assumption
+  · right; apply apart_of_not_bisimilar; assumption
