@@ -3,69 +3,67 @@ import Mathlib.Order.Defs.Unbundled
 
 variable {β : Sort l}
 
-def Compl (P : β → β → Prop) (p q : β) : Prop := ¬ P p q
+abbrev Rel β := β → β → Prop
+abbrev DepRel (F : β → Sort k) := ⦃p q : β⦄ → F p → F q → Prop
+abbrev RelT (F : β → Sort k) := Rel β → DepRel F
 
-def Biggest (P : (β → β → Prop) → Prop) (p q : β) : Prop := ∃ R, P R ∧ R p q
-def Smallest (P : (β → β → Prop) → Prop) (p q : β) : Prop := ∀ R, P R → R p q
-def SymmInterior (R : β → β → Prop) (p q : β) := R p q ∧ R q p
+def Compl (P : Rel β) (p q : β) : Prop := ¬ P p q
 
-def Transfers (T R : β → β → Prop) := ∀ {p p' q : β}, T p p' → R p q → ∃ q', T q q' ∧ R p' q'
-def DirectedTransfers (T R : β → β → Prop) :=
-  ∀ {p p' q}, T p p' → R p q → ∃ q', T q q' ∧ SymmInterior R p' q'
+def DepSymmetric {F : β → Sort k} (R : DepRel F) :=
+  ∀ ⦃p q : β⦄ ⦃op : F p⦄ ⦃oq : F q⦄, R op oq → R oq op
 
-def CoTransfers (T R : β → β → Prop) := ∀ {p p' q : β}, T p p' → (∀ q', T q q' → R p' q') → R p q
-def DirectedCoTransfers (T R : β → β → Prop) :=
-  ∀ {p p' q : β}, T p p' → (∀ q', T q q' → SymmInterior R p' q') → R p q
+class LawfulRelT {Obs : β → Sort k} (RT : RelT Obs) where
+  preserves_symm : ∀ R, Symmetric R → DepSymmetric (RT R)
+  not_both_direct_and_compl :
+    ∀ R, ∀ ⦃p q : β⦄ ⦃op : Obs p⦄ ⦃oq : Obs q⦄, RT R op oq → RT (Compl R) op oq → False
 
-variable {T R : β → β → Prop}
+def Biggest (P : Rel β → Prop) (p q : β) : Prop := ∃ R, P R ∧ R p q
+def Smallest (P : Rel β → Prop) (p q : β) : Prop := ∀ R, P R → R p q
+def SymmInterior (R : Rel β) (p q : β) := R p q ∧ R q p
+
+def Transfers {Obs : β → Sort k} (RT : RelT Obs) (R : Rel β) (p q : β) :=
+  R p q → ∀ op : Obs p, ∃ oq : Obs q, RT R op oq
+def CoTransfers {Obs : β → Sort k} (RT : RelT Obs) (R : Rel β) (p q : β) :=
+  ∀ op : Obs p, (∀ oq : Obs q, RT R op oq) → R p q
+
+variable {Obs : β → Sort k} {RT : RelT Obs} {R : Rel β}
 
 lemma symmetric_of_compl
     : Symmetric R → Symmetric (Compl R) := by
   intro hsymm p q hcr hr
   exact hr |> hsymm |> hcr
 
-lemma transfers_of_directed_transfers
-    : DirectedTransfers T R → Transfers T R := by
-  intro htransf p p' q ht hr
-  rcases htransf ht hr with ⟨q', ht', ⟨hrl', hrr⟩⟩
-  refine ⟨q', ht', hrl'⟩
-
-lemma directed_transfers_of_transfers_of_symmetric
-    : Symmetric R → Transfers T R → DirectedTransfers T R := by
-  intros hsymm htransf p p' q ht hr
-  rcases htransf ht hr with ⟨q', ht', hr'⟩
-  refine ⟨q', ht', ?_⟩
-  constructor
-  · assumption
-  · apply hsymm; assumption
+@[simp] lemma eq_flip_of_symmetric : Symmetric R → flip R = R := by
+  intro hsymm
+  funext
+  rename_i p q
+  unfold flip
+  suffices R p q ↔ R q p by rw [this]
+  constructor <;> apply hsymm
 
 lemma transfers_of_symmetric
-    : Symmetric R → Transfers T R → Transfers T (flip R) := by
-  intro hsymm htransf p p' q ht hr
-  unfold flip at *
-  rcases (htransf ht (hsymm hr)) with ⟨q', ht', hr'⟩
-  exact ⟨q', ht', hsymm hr'⟩
+    : Symmetric R → Transfers RT R p q → Transfers RT (flip R) p q := by
+  intro hsymm htransf hr op
+  rcases htransf (hsymm hr) op with ⟨oq, hr'⟩
+  exists oq
+  rw [eq_flip_of_symmetric hsymm]
+  assumption
 
-lemma cotransfers_of_compl_transfers
-    : Transfers T R → CoTransfers T (Compl R) := by
-  intro htransf p p' q ht hnr hr
-  rcases htransf ht hr with ⟨q', ht', hr'⟩
-  exact hnr q' ht' hr'
-
-open Classical in
-lemma transfers_of_compl_cotransfers
-    : CoTransfers T R → Transfers T (Compl R) := by
-  intro hcotransf p p' q ht hnr
-  apply byContradiction
-  intro hnstep
-  apply hnr
-  apply hcotransf ht
-  intro q' ht'
-  apply byContradiction
-  intro hnr'
-  apply hnstep
-  exists q'
+-- The converse does not generally seem to hold.
+lemma cotransfers_of_compl_transfers [laws : LawfulRelT RT]
+    : Transfers RT R p q → CoTransfers RT (Compl R) p q := by
+  intro htransf op hcont hrp
+  rcases htransf hrp op with ⟨oq, hrq⟩
+  apply laws.not_both_direct_and_compl
+  · assumption
+  · apply hcont
 
 @[simp] lemma symmetric_of_symm_interior : Symmetric (SymmInterior R) := by
   intro p q ⟨hr, hr'⟩
   constructor <;> assumption
+
+structure TransferRel (RT : RelT Obs) (R : Rel β) where
+  transfer : ∀ ⦃p q : β⦄, Transfers RT R p q
+
+structure SymmTransferRel (RT : RelT Obs) (R : Rel β) extends TransferRel RT R where
+  symmetric : Symmetric R

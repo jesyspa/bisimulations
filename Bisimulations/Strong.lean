@@ -4,7 +4,12 @@ import Bisimulations.Relation
 
 variable {α} {lts : LTS α}
 
-structure StrongBisimulation (R : Rel lts) : Prop where
+structure SO (lts : LTS α) (p : lts.Node) where
+  action :  α
+  target : lts.Node
+  transition : lts.transition action p target
+
+structure StrongBisimulation (R : Rel lts.Node) : Prop where
   symmetric : Symmetric R
   transfer : ∀ a, Transfers (lts.transition a) R
 

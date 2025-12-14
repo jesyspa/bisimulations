@@ -2,6 +2,9 @@ name: Lean Action CI
 
 on:
   push:
+    branches-ignore:
+      - 'wip'
+      - 'wip/*'
   pull_request:
   workflow_dispatch:
 
