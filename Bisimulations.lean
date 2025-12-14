@@ -1,5 +1,11 @@
 import Bisimulations.Basic
-import Bisimulations.Strong
-import Bisimulations.LTS
+import Bisimulations.Cotransfer
 import Bisimulations.Logic
+import Bisimulations.LTS
 import Bisimulations.Relation
+import Bisimulations.Strong
+import Bisimulations.SymmCotransfer
+import Bisimulations.SymmTransfer
+import Bisimulations.SymmTransferDuality
+import Bisimulations.Transfer
+import Bisimulations.TransferDuality
