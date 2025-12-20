@@ -25,12 +25,19 @@ class LawfulRelT {Obs : β → Sort k} (RT : RelT Obs) where
 def Biggest (P : Rel β → Prop) (p q : β) : Prop := ∃ R, P R ∧ R p q
 def Smallest (P : Rel β → Prop) (p q : β) : Prop := ∀ R, P R → R p q
 def SymmInterior (R : Rel β) (p q : β) := R p q ∧ R q p
+def SymmClosure (R : Rel β) (p q : β) := R p q ∨ R q p
 
 lemma biggest_is_maximal {P : Rel β → Prop}
     : P R → SubRel R (Biggest P) := fun hp _ _ hr => ⟨R, hp, hr⟩
 
 lemma smallest_is_minimal {P : Rel β → Prop}
     : P R → SubRel (Smallest P) R := fun hp _ _ hr => hr R hp
+
+lemma relext {R Q : Rel β} : (∀ p q, R p q ↔ Q p q) → R = Q := by
+  intro h
+  funext
+  rename_i p q
+  rw [h p q]
 
 variable {R : Rel β}
 
@@ -50,3 +57,44 @@ lemma symmetric_of_compl
 @[simp] lemma symmetric_of_symm_interior : Symmetric (SymmInterior R) := by
   intro p q ⟨hr, hr'⟩
   constructor <;> assumption
+
+@[simp] lemma symmetric_of_symm_closure : Symmetric (SymmClosure R) := by
+  rintro p q (hrl | hrr)
+  · right; assumption
+  · left; assumption
+
+open Classical in
+@[simp] lemma compl_compl_eq_id :
+    Compl (Compl R) = R := by
+  apply relext
+  intro p q
+  constructor
+  · intro hnnr
+    apply byContradiction
+    intro hnr
+    exact hnnr hnr
+  · intro hr hnr
+    exact hnr hr
+
+open Classical in
+lemma symm_closure_compl_eq_compl_symm_interior :
+    SymmClosure (Compl R) = Compl (SymmInterior R) := by
+  apply relext
+  intro p q
+  constructor
+  · rintro (hcl | hcr) ⟨hrl, hrr⟩
+    · apply hcl; assumption
+    · apply hcr; assumption
+  · intro hnsin
+    cases em (R p q)
+    · cases em (R q p)
+      · exfalso
+        apply hnsin
+        constructor <;> assumption
+      · right; assumption
+    · left; assumption
+
+lemma symm_interior_compl_eq_compl_symm_closure :
+    SymmInterior (Compl R) = Compl (SymmClosure R) := by
+  rewrite (occs := .pos [2]) [← @compl_compl_eq_id _ R]
+  rw [symm_closure_compl_eq_compl_symm_interior, compl_compl_eq_id]
