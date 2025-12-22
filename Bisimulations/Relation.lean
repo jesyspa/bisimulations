@@ -7,7 +7,9 @@ abbrev Rel β := β → β → Prop
 abbrev DepRel (F : β → Sort k) := ⦃p q : β⦄ → F p → F q → Prop
 abbrev RelT (F : β → Sort k) := Rel β → DepRel F
 
-def Compl (P : Rel β) (p q : β) : Prop := ¬ P p q
+def Compl (R : Rel β) : Rel β := fun p q => ¬ R p q
+def RelCup (R Q : Rel β) : Rel β := fun p q => R p q ∨ Q p q
+def RelCap (R Q : Rel β) : Rel β := fun p q => R p q ∧ Q p q
 
 def DepSymmetric {F : β → Sort k} (R : DepRel F) :=
   ∀ ⦃p q : β⦄ ⦃op : F p⦄ ⦃oq : F q⦄, R op oq → R oq op
@@ -18,14 +20,12 @@ def SubDepRel {F : β → Sort k} (R R' : DepRel F) :=
 
 class LawfulRelT {Obs : β → Sort k} (RT : RelT Obs) where
   preserves_symm : ∀ R, Symmetric R → DepSymmetric (RT R)
-  not_both_direct_and_compl :
-    ∀ R, ∀ ⦃p q : β⦄ ⦃op : Obs p⦄ ⦃oq : Obs q⦄, RT R op oq → RT (Compl R) op oq → False
   monotone : ∀ R R', SubRel R R' → SubDepRel (RT R) (RT R')
 
 def Biggest (P : Rel β → Prop) (p q : β) : Prop := ∃ R, P R ∧ R p q
 def Smallest (P : Rel β → Prop) (p q : β) : Prop := ∀ R, P R → R p q
-def SymmInterior (R : Rel β) (p q : β) := R p q ∧ R q p
-def SymmClosure (R : Rel β) (p q : β) := R p q ∨ R q p
+def SymmInterior (R : Rel β) := RelCap R (flip R)
+def SymmClosure (R : Rel β) := RelCup R (flip R)
 
 lemma biggest_is_maximal {P : Rel β → Prop}
     : P R → SubRel R (Biggest P) := fun hp _ _ hr => ⟨R, hp, hr⟩
@@ -64,8 +64,8 @@ lemma symmetric_of_compl
   · left; assumption
 
 open Classical in
-@[simp] lemma compl_compl_eq_id :
-    Compl (Compl R) = R := by
+@[simp] lemma compl_compl_eq_id
+    : Compl (Compl R) = R := by
   apply relext
   intro p q
   constructor
@@ -77,8 +77,8 @@ open Classical in
     exact hnr hr
 
 open Classical in
-lemma symm_closure_compl_eq_compl_symm_interior :
-    SymmClosure (Compl R) = Compl (SymmInterior R) := by
+lemma symm_closure_compl_eq_compl_symm_interior
+    : SymmClosure (Compl R) = Compl (SymmInterior R) := by
   apply relext
   intro p q
   constructor
@@ -94,7 +94,19 @@ lemma symm_closure_compl_eq_compl_symm_interior :
       · right; assumption
     · left; assumption
 
-lemma symm_interior_compl_eq_compl_symm_closure :
-    SymmInterior (Compl R) = Compl (SymmClosure R) := by
+lemma symm_interior_compl_eq_compl_symm_closure
+    : SymmInterior (Compl R) = Compl (SymmClosure R) := by
   rewrite (occs := .pos [2]) [← @compl_compl_eq_id _ R]
   rw [symm_closure_compl_eq_compl_symm_interior, compl_compl_eq_id]
+
+lemma rel_cap_subrel_left {R Q : Rel β} : SubRel (RelCap R Q) R :=
+  fun _ _ ⟨hrl, _⟩ => hrl
+
+lemma rel_cap_subrel_right {R Q : Rel β} : SubRel (RelCap R Q) Q :=
+  fun _ _ ⟨_, hrr⟩ => hrr
+
+lemma left_subrel_rel_cup {R Q : Rel β} : SubRel R (RelCup R Q) :=
+  fun _ _ hr => .inl hr
+
+lemma right_subrel_rel_cup {R Q : Rel β} : SubRel Q (RelCup R Q) :=
+  fun _ _ hr => .inr hr

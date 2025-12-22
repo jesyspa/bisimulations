@@ -21,6 +21,12 @@ lemma symm_transfer_rel_reverse
   rw [eq_flip_of_symmetric hsymm]
   constructor <;> assumption
 
+lemma symm_transfer_rel_of_symm_closure_transfer_rel [laws : LawfulRelT RT]
+    : TransferRel RT R → TransferRel RT (flip R) → SymmTransferRel RT (SymmClosure R) := by
+  intros
+  apply SymmTransferRel.mk ?_ symmetric_of_symm_closure
+  apply transfer_rel_closed_under_union <;> assumption
+
 def symmTransferRel (RT : RelT Obs) := Biggest (SymmTransferRel RT)
 
 lemma subdeprel_of_symm_transfer_rel
@@ -30,6 +36,10 @@ lemma symm_of_symm_transfer_rel : Symmetric (symmTransferRel RT) := by
   intro p q ⟨R, hstr, hr⟩
   refine ⟨R, hstr, hstr.symmetric hr⟩
 
+@[symm]
+lemma symm_lemma_symm_transfer_rel : symmTransferRel RT p q → symmTransferRel RT q p := by
+  apply symm_of_symm_transfer_rel
+
 -- TODO: can this be derived from the non-symmetric case?
 lemma symm_transfer_rel_of_symm_transfer_rel [laws : LawfulRelT RT]
     : SymmTransferRel RT (symmTransferRel RT) := by
@@ -38,3 +48,14 @@ lemma symm_transfer_rel_of_symm_transfer_rel [laws : LawfulRelT RT]
   rcases hstr.transfer hr op with ⟨oq, hr'⟩
   refine ⟨oq, ?_⟩
   apply laws.monotone R _ (subdeprel_of_symm_transfer_rel hstr) hr'
+
+lemma transfer_of_symm_transfer
+    : symmTransferRel RT p q → transferRel RT p q :=
+  fun ⟨R, hsymmtransf, hr⟩ => ⟨R, hsymmtransf.toTransferRel, hr⟩
+
+lemma symm_interior_transfer_of_symm_transfer
+    : symmTransferRel RT p q → SymmInterior (transferRel RT) p q := by
+  intro h
+  constructor <;> apply transfer_of_symm_transfer
+  · assumption
+  · symm; assumption
