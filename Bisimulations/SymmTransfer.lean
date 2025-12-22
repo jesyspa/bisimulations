@@ -1,7 +1,7 @@
 import Bisimulations.Relation
 import Bisimulations.Transfer
 
-variable {β : Sort l}
+variable {β : Type l}
 variable {Obs : β → Sort k} {RT : RelT Obs} {R : Rel β}
 
 lemma transfers_of_symmetric

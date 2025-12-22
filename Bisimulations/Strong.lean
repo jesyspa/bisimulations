@@ -32,7 +32,6 @@ where
 def StrongPosT (lts : LTS α) : RelT (StrongObs lts) := StrongObsPosDepRel lts
 def StrongNegT (lts : LTS α) : RelT (StrongObs lts) := StrongObsNegDepRel lts
 
-open Classical in
 instance strongPairInst (lts : LTS α) : DualRelTPair (StrongPosT lts) (StrongNegT lts) where
   compl_left := by
     intro R p q op oq

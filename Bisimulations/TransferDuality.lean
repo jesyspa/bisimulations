@@ -2,7 +2,7 @@ import Bisimulations.Relation
 import Bisimulations.Transfer
 import Bisimulations.Cotransfer
 
-variable {β : Sort l} {Obs : β → Sort k}
+variable {β : Type l} {Obs : β → Sort k}
 
 class DualRelTPair (RT QT : RelT Obs) where
   compl_left : ∀ R {p q : β} (op : Obs p) (oq : Obs q), ¬ RT R op oq ↔ QT (Compl R) op oq
@@ -74,7 +74,6 @@ theorem cotransfer_rel_iff_not_transfer_rel [pair : DualRelTPair RT QT]
   · apply not_cotransfer_and_transfer_rel
   · apply cotransfer_rel_of_not_transfer_rel
 
-open Classical in
 theorem transfer_or_cotransfer_rel [pair : DualRelTPair RT QT]
     : transferRel RT p q ∨ cotransferRel QT p q := by
   cases em (transferRel RT p q)

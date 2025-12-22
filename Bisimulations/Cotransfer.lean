@@ -1,6 +1,6 @@
 import Bisimulations.Relation
 
-variable {β : Sort l}
+variable {β : Type l}
 
 def Cotransfers {Obs : β → Sort k} (RT : RelT Obs) (R : Rel β) (p q : β) :=
   ∀ op : Obs p, (∀ oq : Obs q, RT R op oq) → R p q

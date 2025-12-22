@@ -1,7 +1,7 @@
 import Bisimulations.Relation
 import Bisimulations.Cotransfer
 
-variable {β : Sort l}
+variable {β : Type l}
 variable {Obs : β → Sort k} {RT : RelT Obs} {R : Rel β}
 
 structure SymmCotransferRel (RT : RelT Obs) (R : Rel β) extends CotransferRel RT R where

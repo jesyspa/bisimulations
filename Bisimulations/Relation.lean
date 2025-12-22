@@ -1,7 +1,8 @@
+import Mathlib.Logic.Relation
 import Mathlib.Tactic.Lemma
 import Mathlib.Order.Defs.Unbundled
 
-variable {β : Sort l}
+variable {β : Type l}
 
 abbrev Rel β := β → β → Prop
 abbrev DepRel (F : β → Sort k) := ⦃p q : β⦄ → F p → F q → Prop
@@ -11,8 +12,12 @@ def Compl (R : Rel β) : Rel β := fun p q => ¬ R p q
 def RelCup (R Q : Rel β) : Rel β := fun p q => R p q ∨ Q p q
 def RelCap (R Q : Rel β) : Rel β := fun p q => R p q ∧ Q p q
 
+def DepReflexive {F : β → Sort k} (R : DepRel F) :=
+  ∀ ⦃p : β⦄ (op : F p), R op op
 def DepSymmetric {F : β → Sort k} (R : DepRel F) :=
   ∀ ⦃p q : β⦄ ⦃op : F p⦄ ⦃oq : F q⦄, R op oq → R oq op
+def DepTransitive {F : β → Sort k} (R : DepRel F) :=
+  ∀ ⦃p q r : β⦄ ⦃op : F p⦄ ⦃oq : F q⦄ ⦃or : F r⦄, R op oq → R oq or → R op or
 
 def SubRel (R R' : Rel β) := ∀ ⦃p q⦄, R p q → R' p q
 def SubDepRel {F : β → Sort k} (R R' : DepRel F) :=
@@ -76,7 +81,6 @@ open Classical in
   · intro hr hnr
     exact hnr hr
 
-open Classical in
 lemma symm_closure_compl_eq_compl_symm_interior
     : SymmClosure (Compl R) = Compl (SymmInterior R) := by
   apply relext
@@ -99,6 +103,9 @@ lemma symm_interior_compl_eq_compl_symm_closure
   rewrite (occs := .pos [2]) [← @compl_compl_eq_id _ R]
   rw [symm_closure_compl_eq_compl_symm_interior, compl_compl_eq_id]
 
+lemma subrel_reflgen {R : Rel β} : SubRel R (Relation.ReflGen R) :=
+  by apply Relation.ReflGen.single
+
 lemma rel_cap_subrel_left {R Q : Rel β} : SubRel (RelCap R Q) R :=
   fun _ _ ⟨hrl, _⟩ => hrl
 
@@ -110,3 +117,6 @@ lemma left_subrel_rel_cup {R Q : Rel β} : SubRel R (RelCup R Q) :=
 
 lemma right_subrel_rel_cup {R Q : Rel β} : SubRel Q (RelCup R Q) :=
   fun _ _ hr => .inr hr
+
+lemma subrel_transgen {R : Rel β} : SubRel R (Relation.TransGen R) :=
+  by apply Relation.TransGen.single
